@@ -12,7 +12,7 @@
  - [Philadelphia, PA](https://opendataphilly.org/datasets/crime-incidents/)
  #### Baseball
  - [Historical](https://www.retrosheet.org/gamelogs/index.html)
- - [Daily]
+ - [Current](https://statsapi.mlb.com/api/v1/schedule?sportId=1&season=2025&gameType=R)
 ### Required .env Fields
 In order to run properly, a .env file must be created with the following fields defined:
  - MINIO_URL

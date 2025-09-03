@@ -75,36 +75,25 @@ def import_philadelphia_crime():
     finally:
       import_year += 1
 
-def import_daily_baseball():
-  import_day = datetime.now() - timedelta(days=IMPORT_DELAY_DAYS)
+def import_current_baseball():
+  try:
+    logging.info(f"Retrieving MLB current season scores.")
 
-  DAILY_BASEBALL_PREFIX = f"baseball/daily/{import_day.year}/"
+    url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&season=2025&gameType=R"
+    response = requests.get(url)
+    response.raise_for_status()
 
-  imported_files = minio_client.list_objects(MINIO_BUCKET_NAME, prefix=DAILY_BASEBALL_PREFIX)
-  imported_dates = [file.object_name[-15:-5] for file in imported_files]
+    score_data = response.json()
 
-  while import_day.month > BASEBALL_DAILY_STOP_MONTH:
-    if import_day.strftime("%Y-%m-%d") in imported_dates:
-      import_day -= timedelta(days=1)
-      continue
-
-    try:
-      logging.info(f"Retrieving MLB daily scores for day={import_day.strftime("%Y-%m-%d")}")
-      
-      url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={import_day.strftime("%Y-%m-%d")}"
-      response = requests.get(url)
-      response.raise_for_status()
-    
-      minio_file_path = f"{DAILY_BASEBALL_PREFIX}mlb_scores_{import_day.strftime("%Y-%m-%d")}.json"
-
-      logging.info("Saving data as JSON in MinIO")
-      send_to_minio(response.content, minio_file_path)
-      
-    except Exception as e:
-      logging.error(f"Error in MLB daily stats transfer for date={import_day}: {e}")
-    finally:
-      import_day -= timedelta(days=1)
+    logging.info(f"API retrieval successful. Games returned: {score_data["totalGames"]}")
   
+    minio_file_path = f"baseball/current/mlb_regular_season_scores_{datetime.now().year}_{datetime.now().strftime("%Y-%m-%d")}.json"
+
+    logging.info("Saving data as JSON in MinIO")
+    send_to_minio(response.content, minio_file_path)
+    
+  except Exception as e:
+    logging.error(f"Error in MLB current season data transfer: {e}")
 
 def import_historical_baseball():
   import_year = 2000
@@ -129,4 +118,4 @@ def import_historical_baseball():
     finally:
       import_year += 1
 
-import_daily_baseball()
+import_current_baseball()
