@@ -5,7 +5,7 @@ import zipfile
 import requests
 from dotenv import load_dotenv
 from minio import Minio
-from datetime import datetime
+from datetime import datetime, timedelta
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.abspath(os.path.join(current_path, "..", ".."))
@@ -16,6 +16,10 @@ load_dotenv()
 
 PHILADELPHIA_CRIME_START_YEAR = 2021
 PHILADELPHIA_CRIME_END_YEAR = datetime.now().year
+
+IMPORT_DELAY_DAYS = 7
+
+BASEBALL_DAILY_STOP_MONTH = 2
 
 MINIO_URL = os.getenv("MINIO_URL")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
@@ -71,6 +75,31 @@ def import_philadelphia_crime():
     finally:
       import_year += 1
 
+def import_daily_baseball():
+  import_day = datetime.now() - timedelta(days=IMPORT_DELAY_DAYS)
+  while import_day.month > BASEBALL_DAILY_STOP_MONTH:
+    logging.info(f"Retrieving MLB scores for date={import_day}")
+    DAILY_BASEBALL_PREFIX = "baseball/daily/"
+
+
+    try:
+      imported_days = minio_client.list_objects(MINIO_BUCKET_NAME, prefix=DAILY_BASEBALL_PREFIX)
+      
+      url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={import_day.strftime("%Y-%m-%d")}"
+      response = requests.get(url)
+      response.raise_for_status()
+    
+      minio_file_path = f"baseball/daily/mlb_scores_{import_day.strftime("%Y-%m-%d")}.json"
+
+      logging.info("Saving data as JSON in MinIO")
+      send_to_minio(response.content, minio_file_path)
+      
+    except Exception as e:
+      logging.error(f"Error in MLB daily stats transfer for date={import_day}: {e}")
+    finally:
+      import_day -= timedelta(days=1)
+  
+
 def import_historical_baseball():
   import_year = 2000
   while import_year < datetime.now().year:
@@ -94,4 +123,4 @@ def import_historical_baseball():
     finally:
       import_year += 1
 
-import_historical_baseball()
+import_daily_baseball()
