@@ -72,8 +72,9 @@ def import_philadelphia_crime():
       import_year += 1
 
 def import_historical_baseball():
-  import_year = 2024
-  while import_year < 2026:
+  import_year = 2000
+  while import_year < datetime.now().year:
+    logging.info(f"Retrieving historical baseball data for year={import_year}")
     try:
       url = f"https://www.retrosheet.org/gamelogs/gl{import_year}.zip"
       response = requests.get(url)
@@ -81,8 +82,12 @@ def import_historical_baseball():
 
       with zipfile.ZipFile(io.BytesIO(response.content)) as z:
         for filename in z.namelist():
+          logging.info(f"ZIP retrieval successful for {filename}")
+
           with z.open(filename) as gamelogs:
             minio_file_path = f'baseball/historical/mlb_gamelogs_{import_year}_{datetime.now().strftime("%Y-%m-%d")}.csv'
+
+            logging.info("Saving data as CSV in MinIO")
             send_to_minio(gamelogs.read(), minio_file_path)
     except Exception as e:
       logging.error(f"Error in historical baseball data transfer for year={import_year}: {e}")
