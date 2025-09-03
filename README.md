@@ -13,6 +13,12 @@
  #### Baseball
  - [Historical]
  - [Daily]
+### Required .env Fields
+In order to run properly, a .env file must be created with the following fields defined:
+ - MINIO_URL
+ - MINIO_ACCESS_KEY
+ - MINIO_SECRET_KEY
+ - MINIO_BUCKET_NAME
 ### Developer
 Alex Berka
 ### Last Updated
