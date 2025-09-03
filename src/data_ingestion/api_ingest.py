@@ -77,19 +77,25 @@ def import_philadelphia_crime():
 
 def import_daily_baseball():
   import_day = datetime.now() - timedelta(days=IMPORT_DELAY_DAYS)
-  while import_day.month > BASEBALL_DAILY_STOP_MONTH:
-    logging.info(f"Retrieving MLB scores for date={import_day}")
-    DAILY_BASEBALL_PREFIX = "baseball/daily/"
 
+  DAILY_BASEBALL_PREFIX = f"baseball/daily/{import_day.year}/"
+
+  imported_files = minio_client.list_objects(MINIO_BUCKET_NAME, prefix=DAILY_BASEBALL_PREFIX)
+  imported_dates = [file.object_name[-15:-5] for file in imported_files]
+
+  while import_day.month > BASEBALL_DAILY_STOP_MONTH:
+    if import_day.strftime("%Y-%m-%d") in imported_dates:
+      import_day -= timedelta(days=1)
+      continue
 
     try:
-      imported_days = minio_client.list_objects(MINIO_BUCKET_NAME, prefix=DAILY_BASEBALL_PREFIX)
+      logging.info(f"Retrieving MLB daily scores for day={import_day.strftime("%Y-%m-%d")}")
       
       url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={import_day.strftime("%Y-%m-%d")}"
       response = requests.get(url)
       response.raise_for_status()
     
-      minio_file_path = f"baseball/daily/mlb_scores_{import_day.strftime("%Y-%m-%d")}.json"
+      minio_file_path = f"{DAILY_BASEBALL_PREFIX}mlb_scores_{import_day.strftime("%Y-%m-%d")}.json"
 
       logging.info("Saving data as JSON in MinIO")
       send_to_minio(response.content, minio_file_path)
