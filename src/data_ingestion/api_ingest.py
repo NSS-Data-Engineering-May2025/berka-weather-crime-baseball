@@ -66,8 +66,31 @@ def import_philadelphia_crime():
       send_to_minio(response.content, minio_file_path)
 
     except Exception as e:
-      logging.error(f"Error in data transfer for year={import_year}: {e}")
+      logging.error(f"Error in Philadelphia crime data transfer for year={import_year}: {e}")
     finally:
       import_year += 1
 
-import_philadelphia_crime()
+def import_historical_baseball():
+  import_year = 2000
+  while import_year < 2001:
+    try:
+      url = f"https://www.retrosheet.org/gamelogs/gl{import_year}.zip"
+      response = requests.get(url)
+      response.raise_for_status()
+    except Exception as e:
+      logging.error(f"Error in historical baseball data transfer for year={import_year}: {e}")
+    finally:
+      import_year += 1
+
+  # Step 2: Open the zip file from memory
+  # with zipfile.ZipFile(io.BytesIO(response.content)) as z:
+  #     # Step 3: Extract the CSV file (replace with actual CSV filename if known)
+  #     for filename in z.namelist():
+  #         if filename.endswith('.csv'):
+  #             with z.open(filename) as csvfile, open("output.csv", "wb") as f_out:
+  #                 f_out.write(csvfile.read())
+  #             print(f"Saved {filename} as output.csv")
+
+
+
+import_historical_baseball()

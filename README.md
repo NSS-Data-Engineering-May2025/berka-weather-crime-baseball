@@ -1,17 +1,17 @@
 # Weather x Crime x Baseball: Trend Analysis Data Pipeline
 ### Data Sources
 #### Weather
- - [Detroit, MI ()](https://www.ncei.noaa.gov/access/past-weather/USW00014822/data.csv)
+ - [Detroit, MI ()](https://www.ncei.noaa.gov/access/past-weather/USC00202016/data.csv)
  - [St. Louis, MO (KCPS)](https://www.ncei.noaa.gov/access/past-weather/USW00003960/data.csv)
  - [Atlanta, GA]
- - [Philadelphia, PA]
+ - [Philadelphia, PA](https://www.ncei.noaa.gov/access/past-weather/USW00013739/data.csv)
  #### Crime
  - [Detroit, MI]
  - [St. Louis, MO]
  - [Atlanta, GA]
- - [Philadelphia, PA]
+ - [Philadelphia, PA](https://opendataphilly.org/datasets/crime-incidents/)
  #### Baseball
- - [Historical]
+ - [Historical](https://www.retrosheet.org/gamelogs/index.html)
  - [Daily]
 ### Required .env Fields
 In order to run properly, a .env file must be created with the following fields defined:
@@ -22,4 +22,4 @@ In order to run properly, a .env file must be created with the following fields 
 ### Developer
 Alex Berka
 ### Last Updated
-Sept 2, 2025
+Sept 3, 2025
