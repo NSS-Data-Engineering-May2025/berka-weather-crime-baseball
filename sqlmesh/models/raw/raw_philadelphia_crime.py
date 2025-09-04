@@ -47,14 +47,19 @@ def execute(context, **kwargs):
       secret_key=MINIO_SECRET_KEY,
       secure=False
     )
-  
+
   files_to_import = get_latest_minio_records_by_timestamp(minio_client=minio_client, prefix="crime/philadelphia/")
 
-  reports = minio_client.list_objects(MINIO_BUCKET_NAME, prefix="crime/philadelphia/")
-  latest = datetime()
-  for report in reports:
-    name = report.object_name
-    *_, stamp = name.split("_")
-    stamp_comparator = datetime.strptime(stamp, "%Y-%m-%d")
-    if year == "2021" and stamp_comparator > latest:
-      latest = stamp_comparator
+  collected_years = []
+  for file in files_to_import:
+    with minio_client.get_object(MINIO_BUCKET_NAME, file) as response:
+      single_year = response.json()["rows"]
+      collected_years.append(pl.DataFrame(single_year))
+
+  all_years = pl.concat(collected_years)
+
+  all_years = all_years.with_columns(
+    pl.col("dispatch_date").str.strptime(pl.Date, "%Y-%m-%d")
+  )
+
+  return all_years.to_pandas()
