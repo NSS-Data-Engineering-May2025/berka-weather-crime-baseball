@@ -1,28 +1,19 @@
 import os
-import json
+import sys
 from dotenv import load_dotenv
 from sqlmesh import model
 import polars as pl
-from datetime import datetime
 from minio import Minio
 
-load_dotenv()
-
-MINIO_URL = os.getenv("MINIO_URL")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
-MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME")
-
-minio_client = Minio(
-    MINIO_URL,
-    access_key=MINIO_ACCESS_KEY,
-    secret_key=MINIO_SECRET_KEY,
-    secure=False
-  )
+current_path = os.path.dirname(os.path.abspath(__file__))
+parent_path = os.path.abspath(os.path.join(current_path, "..", ".."))
+sys.path.append(parent_path)
+from utils.minio_utils import get_latest_minio_records_by_timestamp
 
 @model(
   name="raw.philadelphia_crime_report",
   kind="FULL",
+  gateway="duckdb",
   columns={
     'cartodb_id': 'int',
     'the_geom': 'varchar',
@@ -42,7 +33,23 @@ minio_client = Minio(
     'point_y': 'float'
   }
 )
-def execute():
+def execute(context, **kwargs):
+  load_dotenv()
+
+  MINIO_URL = os.getenv("MINIO_URL")
+  MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
+  MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
+  MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME")
+
+  minio_client = Minio(
+      MINIO_URL,
+      access_key=MINIO_ACCESS_KEY,
+      secret_key=MINIO_SECRET_KEY,
+      secure=False
+    )
+  
+  files_to_import = get_latest_minio_records_by_timestamp(minio_client=minio_client, prefix="crime/philadelphia/")
+
   reports = minio_client.list_objects(MINIO_BUCKET_NAME, prefix="crime/philadelphia/")
   latest = datetime()
   for report in reports:

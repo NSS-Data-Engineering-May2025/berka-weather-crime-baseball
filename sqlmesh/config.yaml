@@ -9,7 +9,7 @@ gateways:
       catalogs:
         wcb:
           type: postgres
-          path: 'dbname=wcb user=postgresuser host=localhost'
+          path: 'dbname=wcb user=postgresuser host=localhost password=postgres-password port=5432'
       extensions:
         - name: httpfs
   postgres:

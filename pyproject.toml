@@ -8,6 +8,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "minio>=7.2.16",
     "polars>=1.33.0",
+    "pyarrow>=21.0.0",
     "requests>=2.32.5",
-    "sqlmesh>=0.214.0",
+    "sqlmesh[postgres]>=0.214.0",
 ]
