@@ -1,6 +1,7 @@
 import os
 import io
 import sys
+import json
 import zipfile
 import requests
 from dotenv import load_dotenv
@@ -55,25 +56,36 @@ def send_to_minio(data: bytes, filename):
 
 def import_philadelphia_crime():
   import_year = PHILADELPHIA_CRIME_START_YEAR
+  crime_data = {}
+  logging.info(f"Retrieving Philadelphia crime data for years {PHILADELPHIA_CRIME_START_YEAR} to {PHILADELPHIA_CRIME_END_YEAR}")
+
   while import_year <= PHILADELPHIA_CRIME_END_YEAR:
-    logging.info(f"Retrieving Philadelphia crime data for year={import_year}")
     try:
       url = f"https://phl.carto.com/api/v2/sql?q=SELECT * FROM incidents_part1_part2 WHERE dispatch_date LIKE '{import_year}-%25'"
       response = requests.get(url)
       response.raise_for_status()
 
       annual_crime_data = response.json()
-      logging.info(f"API retrieval successful. Rows returned: {annual_crime_data["total_rows"]}")
 
-      minio_file_path = f"crime/philadelphia/philadelphia_crime_report_{import_year}_{datetime.now().strftime("%Y-%m-%d")}.json"
-
-      logging.info("Saving data as JSON in MinIO")
-      send_to_minio(response.content, minio_file_path)
+      if "rows" in crime_data:
+        crime_data["rows"].extend(annual_crime_data["rows"])
+        crime_data["total_rows"] += annual_crime_data["total_rows"]
+      else:
+        crime_data = annual_crime_data
+      logging.info(f"API retrieval successful for {import_year}. Rows returned: {annual_crime_data["total_rows"]}")
 
     except Exception as e:
-      logging.error(f"Error in Philadelphia crime data transfer for year={import_year}: {e}")
+      logging.error(f"Error in Philadelphia crime data retrieval for year={import_year}: {e}")
     finally:
       import_year += 1
+
+  try:
+    minio_file_path = f"crime/philadelphia/philadelphia_crime_report_{datetime.now().strftime("%Y-%m-%d")}.json"
+
+    logging.info("Saving data as JSON in MinIO")
+    send_to_minio(json.dumps(crime_data).encode("utf-8"), minio_file_path)
+  except Exception as e:
+    logging.error(f"Error in Philadelphia crime data transfer to MinIO: {e}")
 
 def import_current_baseball():
   try:
@@ -118,4 +130,4 @@ def import_historical_baseball():
     finally:
       import_year += 1
 
-import_current_baseball()
+import_philadelphia_crime()
