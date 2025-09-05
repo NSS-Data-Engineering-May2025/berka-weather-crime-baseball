@@ -16,7 +16,12 @@ from src.logger import initialize_logger
 load_dotenv()
 
 PHILADELPHIA_CRIME_START_YEAR = 2006
-PHILADELPHIA_CRIME_END_YEAR = datetime.now().year
+HISTORICAL_BASEBALL_START_YEAR = 2000
+
+NCEI_WEATHER_DATASETS=[
+  {'station':'USW00014822', 'city':'detroit'},
+  {'station':'USW00013739', 'city':'philadelphia'}
+]
 
 IMPORT_DELAY_DAYS = 7
 
@@ -52,9 +57,26 @@ def send_to_minio(data: bytes, filename):
   except Exception as e:
     raise
 
+def import_weather_ncei():
+  for dataset in NCEI_WEATHER_DATASETS:
+    try:
+      url = f"https://www.ncei.noaa.gov/access/past-weather/{dataset["station"]}/data.csv"
+      response = requests.get(url)
+      response.raise_for_status()
+
+      logging.info(f"CSV retrieval successful for {dataset["station"]} in {dataset["city"]}.")
+      
+      minio_file_path = f"weather/{dataset["city"]}/ncei/{datetime.now().strftime("%Y-%m-%d")}/{dataset["city"]}_weather_report_ncei.csv"
+
+      logging.info("Saving CSV to MinIO")
+      send_to_minio(response.content, minio_file_path)
+
+    except Exception as e:
+      logging.error(f"Error in NCEI weather data retrieval for station={dataset["station"]}, city={dataset["city"]}: {e}")
+
 def import_philadelphia_crime():
   import_year = PHILADELPHIA_CRIME_START_YEAR
-  while import_year <= PHILADELPHIA_CRIME_END_YEAR:
+  while import_year <= datetime.now().year:
     logging.info(f"Retrieving Philadelphia crime data for year {import_year}")
     try:
       url = f"https://phl.carto.com/api/v2/sql?q=SELECT * FROM incidents_part1_part2 WHERE dispatch_date LIKE '{import_year}-%25'"
@@ -89,7 +111,7 @@ def import_current_baseball():
 
     logging.info(f"API retrieval successful. Games returned: {score_data["totalGames"]}")
   
-    minio_file_path = f"baseball/current/mlb_regular_season_scores_{datetime.now().year}_{datetime.now().strftime("%Y-%m-%d")}.json"
+    minio_file_path = f"baseball/current/{datetime.now().strftime("%Y-%m-%d")}/mlb_regular_season_scores_{datetime.now().year}_.json"
 
     logging.info("Saving data as JSON in MinIO")
     send_to_minio(response.content, minio_file_path)
@@ -98,7 +120,7 @@ def import_current_baseball():
     logging.error(f"Error in MLB current season data transfer: {e}")
 
 def import_historical_baseball():
-  import_year = 2000
+  import_year = HISTORICAL_BASEBALL_START_YEAR
   while import_year < datetime.now().year:
     logging.info(f"Retrieving historical baseball data for year={import_year}")
     try:
@@ -106,12 +128,12 @@ def import_historical_baseball():
       response = requests.get(url)
       response.raise_for_status()
 
-      with zipfile.ZipFile(io.BytesIO(response.content)) as z:
-        for filename in z.namelist():
-          logging.info(f"ZIP retrieval successful for {filename}")
+      with zipfile.ZipFile(io.BytesIO(response.content)) as unzipped:
+        for filename in unzipped.namelist():
+          logging.info(f"Zip retrieval successful for {filename}")
 
-          with z.open(filename) as gamelogs:
-            minio_file_path = f'baseball/historical/mlb_gamelogs_{import_year}_{datetime.now().strftime("%Y-%m-%d")}.csv'
+          with unzipped.open(filename) as gamelogs:
+            minio_file_path = f'baseball/historical/gamelogs/mlb_gamelogs_{import_year}.csv'
 
             logging.info("Saving data as CSV in MinIO")
             send_to_minio(gamelogs.read(), minio_file_path)
@@ -120,4 +142,4 @@ def import_historical_baseball():
     finally:
       import_year += 1
 
-import_philadelphia_crime()
+import_historical_baseball()

@@ -1,10 +1,11 @@
 # Weather x Crime x Baseball: Trend Analysis Data Pipeline
 ### Data Sources
 #### Weather
- - [Detroit, MI ()](https://www.ncei.noaa.gov/access/past-weather/USC00202016/data.csv)
+##### NCEI
+ - [Detroit, MI (Detroit City Airport)](https://www.ncei.noaa.gov/access/past-weather/USW00014822/data.csv)
  - [St. Louis, MO (KCPS)](https://www.ncei.noaa.gov/access/past-weather/USW00003960/data.csv)
  - [Atlanta, GA]
- - [Philadelphia, PA](https://www.ncei.noaa.gov/access/past-weather/USW00013739/data.csv)
+ - [Philadelphia, PA (Philadelphia International Airport)](https://www.ncei.noaa.gov/access/past-weather/USW00013739/data.csv)
  #### Crime
  - [Detroit, MI]
  - [St. Louis, MO]
