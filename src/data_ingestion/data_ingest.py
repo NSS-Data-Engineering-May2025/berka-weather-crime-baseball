@@ -7,11 +7,13 @@ import requests
 from dotenv import load_dotenv
 from minio import Minio
 from datetime import datetime, timedelta
+from data_consolidation import metar_to_parquet
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.abspath(os.path.join(current_path, "..", ".."))
 sys.path.append(parent_path)
 from src.logger import initialize_logger
+
 
 load_dotenv()
 
@@ -65,19 +67,25 @@ def send_to_minio(data: bytes, filename):
 def import_weather_metar():
   for station in METAR_WEATHER_STATIONS:
     today = datetime.today()
-    starting_day = (today - timedelta(days=7)).strftime("%Y-%m-%d")
-    ending_day = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+    ingest_day = today - timedelta(days=1)
     try:
-      url = f"https://aviationweather.gov/api/data/metar?ids={station["ids"]}&format=json&taf=false&hours=168&date={today.strftime("%Y%m%d")}0000"
+      url = f"https://aviationweather.gov/api/data/metar?ids={station["ids"]}&format=json&taf=false&hours=24&date={today.strftime("%Y%m%d")}0000"
       response = requests.get(url)
       response.raise_for_status()
 
-      logging.info(f"API METAR retrieval successful for {station["ids"]} in {station["city"]}, for week {starting_day} - {ending_day}.")
+      logging.info(f"API METAR retrieval successful for {station["ids"]} in {station["city"]} for {ingest_day.strftime('%Y-%m-%d')}.")
       
-      minio_file_path = f"weather/{station["city"]}/metar/{ending_day}/{station["city"]}_weather_report_metar_week_ending_{ending_day}.json"
+      minio_file_path = f"weather/{station["city"]}/metar/{ingest_day.year}/{station["city"]}_weather_report_metar_{ingest_day.strftime("%Y-%m-%d")}.json"
 
       logging.info("Saving JSON to MinIO")
       send_to_minio(response.content, minio_file_path)
+
+      logging.info("Appending daily METAR data to yearly parquet")
+      consolidated_metar = metar_to_parquet(station["city"], response.json())
+
+      minio_file_path_parquet = f"weather/{station["city"]}/metar/{ingest_day.year}/{station["city"]}_yearly_metar_{ingest_day.year}.parquet"
+
+      send_to_minio(consolidated_metar, minio_file_path_parquet)
 
     except Exception as e:
       logging.error(f"Error in METAR weather data retrieval for station={station["ids"]}, city={station["city"]}: {e}")
