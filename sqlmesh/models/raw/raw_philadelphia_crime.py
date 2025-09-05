@@ -1,7 +1,9 @@
 import os
 import sys
+import json
 from dotenv import load_dotenv
 from sqlmesh import model
+from datetime import datetime
 import polars as pl
 from minio import Minio
 
@@ -48,12 +50,13 @@ def execute(context, **kwargs):
       secure=False
     )
 
-  files_to_import = get_latest_minio_records_by_timestamp(minio_client=minio_client, prefix="crime/philadelphia/")
+  # files_to_import = get_latest_minio_records_by_timestamp(minio_client=minio_client, prefix="crime/philadelphia/")
 
   collected_years = []
-  for file in files_to_import:
-    with minio_client.get_object(MINIO_BUCKET_NAME, file) as response:
-      single_year = response.json()["rows"]
+  for report in minio_client.list_objects(MINIO_BUCKET_NAME, prefix=f"crime/philadelphia/{datetime.now().strftime("%Y-%m-%d")}/"):
+    with minio_client.get_object(MINIO_BUCKET_NAME, report.object_name) as response:
+      data = response.read()
+      single_year = json.loads(data.decode("utf-8"))["rows"]
       collected_years.append(pl.DataFrame(single_year))
 
   all_years = pl.concat(collected_years)

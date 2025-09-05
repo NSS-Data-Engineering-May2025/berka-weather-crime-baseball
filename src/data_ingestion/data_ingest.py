@@ -20,8 +20,6 @@ PHILADELPHIA_CRIME_END_YEAR = datetime.now().year
 
 IMPORT_DELAY_DAYS = 7
 
-BASEBALL_DAILY_STOP_MONTH = 2
-
 MINIO_URL = os.getenv("MINIO_URL")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
@@ -67,7 +65,7 @@ def import_philadelphia_crime():
       if annual_crime_data["total_rows"] > 0:
         logging.info(f"API retrieval successful for {import_year}. Rows returned: {annual_crime_data["total_rows"]}")
       
-        minio_file_path = f"crime/philadelphia/philadelphia_crime_report_{import_year}_{datetime.now().strftime("%Y-%m-%d")}.json"
+        minio_file_path = f"crime/philadelphia/{datetime.now().strftime("%Y-%m-%d")}/philadelphia_crime_report_{import_year}.json"
 
         logging.info("Saving data as JSON in MinIO")
         send_to_minio(response.content, minio_file_path)
