@@ -23,6 +23,11 @@ NCEI_WEATHER_DATASETS=[
   {'station':'USW00013739', 'city':'philadelphia'}
 ]
 
+METAR_WEATHER_STATIONS=[
+  {'ids':'KDET', 'city':'detroit'},
+  {'ids':'KPHL', 'city':'philadelphia'}
+]
+
 IMPORT_DELAY_DAYS = 7
 
 MINIO_URL = os.getenv("MINIO_URL")
@@ -56,6 +61,26 @@ def send_to_minio(data: bytes, filename):
     logging.info(f"{filename} saved to MinIO of size {len(data)} bytes")
   except Exception as e:
     raise
+
+def import_weather_metar():
+  for station in METAR_WEATHER_STATIONS:
+    today = datetime.today()
+    starting_day = (today - timedelta(days=7)).strftime("%Y-%m-%d")
+    ending_day = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+    try:
+      url = f"https://aviationweather.gov/api/data/metar?ids={station["ids"]}&format=json&taf=false&hours=168&date={today.strftime("%Y%m%d")}0000"
+      response = requests.get(url)
+      response.raise_for_status()
+
+      logging.info(f"API METAR retrieval successful for {station["ids"]} in {station["city"]}, for week {starting_day} - {ending_day}.")
+      
+      minio_file_path = f"weather/{station["city"]}/metar/{ending_day}/{station["city"]}_weather_report_metar_week_ending_{ending_day}.json"
+
+      logging.info("Saving JSON to MinIO")
+      send_to_minio(response.content, minio_file_path)
+
+    except Exception as e:
+      logging.error(f"Error in METAR weather data retrieval for station={station["ids"]}, city={station["city"]}: {e}")
 
 def import_weather_ncei():
   for dataset in NCEI_WEATHER_DATASETS:
@@ -142,4 +167,4 @@ def import_historical_baseball():
     finally:
       import_year += 1
 
-import_historical_baseball()
+import_weather_metar()
