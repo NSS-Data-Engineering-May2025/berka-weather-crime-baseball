@@ -193,11 +193,9 @@ def execute(context, **kwargs):
     secure=False
   )
 
-  files_to_import = get_latest_minio_records_by_timestamp(minio_client=minio_client, prefix="baseball/historical/")
-
   collected_years = []
-  for file in files_to_import:
-    with minio_client.get_object(MINIO_BUCKET_NAME, file) as response:
+  for file in minio_client.list_objects(MINIO_BUCKET_NAME, prefix=f"baseball/historical/gamelogs/"):
+    with minio_client.get_object(MINIO_BUCKET_NAME, file.object_name) as response:
       single_year = pl.read_csv(response, infer_schema=False, has_header=False)
       collected_years.append(single_year)
 

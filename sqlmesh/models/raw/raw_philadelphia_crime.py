@@ -1,14 +1,15 @@
 import os
 import sys
+import json
 from dotenv import load_dotenv
 from sqlmesh import model
+from datetime import datetime, timedelta
 import polars as pl
 from minio import Minio
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.abspath(os.path.join(current_path, "..", ".."))
 sys.path.append(parent_path)
-from utils.minio_utils import get_latest_minio_records_by_timestamp
 
 @model(
   name="raw.philadelphia_crime_report",
@@ -48,13 +49,27 @@ def execute(context, **kwargs):
       secure=False
     )
 
-  files_to_import = get_latest_minio_records_by_timestamp(minio_client=minio_client, prefix="crime/philadelphia/")
-
   collected_years = []
-  for file in files_to_import:
-    with minio_client.get_object(MINIO_BUCKET_NAME, file) as response:
-      single_year = response.json()["rows"]
+
+  # Collect past records
+  for report in minio_client.list_objects(MINIO_BUCKET_NAME, prefix=f"crime/philadelphia/{datetime.now().year}/past/"):
+    with minio_client.get_object(MINIO_BUCKET_NAME, report.object_name) as response:
+      data = response.read()
+      single_year = json.loads(data.decode("utf-8"))["rows"]
       collected_years.append(pl.DataFrame(single_year))
+
+  # Find most recent current year import and collect
+  check_day = datetime.now() + timedelta(days=3)
+  while check_day.year == datetime.now().year:
+    try:
+      with minio_client.get_object(MINIO_BUCKET_NAME, f"crime/philadelphia/{check_day.year}/{check_day.strftime("%Y-%m-%d")}/philadelphia_crime_report_{check_day.year}.json") as response:
+        data = response.read()
+        current_year = json.loads(data.decode("utf-8"))["rows"]
+        collected_years.append(pl.DataFrame(current_year))
+        break
+    except:
+      check_day -= timedelta(days=1)
+      continue
 
   all_years = pl.concat(collected_years)
 
