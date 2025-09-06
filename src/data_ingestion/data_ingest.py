@@ -17,8 +17,12 @@ from src.logger import initialize_logger
 
 load_dotenv()
 
+DETROIT_CRIME_START_YEAR = 2017
+DETROIT_CRIME_INGESTION_DELAY = int(os.getenv("DETROIT_CRIME_INGESTION_DELAY"))
+DETROIT_CRIME_INGESTION_LIMIT = 2000
 PHILADELPHIA_CRIME_START_YEAR = 2006
 HISTORICAL_BASEBALL_START_YEAR = 2000
+HISTORICAL_BASEBALL_INGESTION_MONTH = 1
 
 NCEI_WEATHER_DATASETS=[
   {'station':'USW00014822', 'city':'detroit'},
@@ -29,8 +33,6 @@ METAR_WEATHER_STATIONS=[
   {'ids':'KDET', 'city':'detroit'},
   {'ids':'KPHL', 'city':'philadelphia'}
 ]
-
-IMPORT_DELAY_DAYS = 7
 
 MINIO_URL = os.getenv("MINIO_URL")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
@@ -64,6 +66,7 @@ def send_to_minio(data: bytes, filename):
   except Exception as e:
     raise
 
+# Daily ingestion w/ compilation to yearly parquet file
 def import_weather_metar():
   for station in METAR_WEATHER_STATIONS:
     today = datetime.today()
@@ -90,6 +93,7 @@ def import_weather_metar():
     except Exception as e:
       logging.error(f"Error in METAR weather data retrieval for station={station["ids"]}, city={station["city"]}: {e}")
 
+# Daily ingestion, single file with all history
 def import_weather_ncei():
   for dataset in NCEI_WEATHER_DATASETS:
     try:
@@ -107,6 +111,7 @@ def import_weather_ncei():
     except Exception as e:
       logging.error(f"Error in NCEI weather data retrieval for station={dataset["station"]}, city={dataset["city"]}: {e}")
 
+# Daily ingestion, 1 file per year
 def import_philadelphia_crime():
   import_year = PHILADELPHIA_CRIME_START_YEAR
   while import_year <= datetime.now().year:
@@ -132,6 +137,34 @@ def import_philadelphia_crime():
     finally:
       import_year += 1
 
+# Daily ingestion of deltas from DETROIT_INGESTION_CRIME_DELAY days prior, also uses manual seed data for historical
+def import_detroit_crime():
+  import_day = (datetime.today() - timedelta(days=3)).strftime("%Y-%m-%d")
+  result_offset = 0
+  while True:
+    logging.info(f"Retrieving Detroit crime data updates for {import_day}")
+    try:
+      url = f"https://services2.arcgis.com/qvkbeam7Wirps6zC/arcgis/rest/services/RMS_Crime_Incidents/FeatureServer/0/query?where=updated_at%20LIKE%20%27{import_day}%25%27&resultOffset={result_offset}&outFields=*&outSR=4326&f=json"
+      response = requests.get(url)
+      response.raise_for_status()
+
+      annual_crime_data = response.json()
+      if len(annual_crime_data["features"]) > 0:
+        logging.info(f"API retrieval successful for {import_day}. Rows returned: {len(annual_crime_data["features"])}")
+      
+        minio_file_path = f"crime/detroit/{import_day}/detroit_crime_deltas_{result_offset + 1}_to_{result_offset + len(annual_crime_data["features"])}.json"
+
+        logging.info("Saving data as JSON in MinIO")
+        send_to_minio(response.content, minio_file_path)
+      else:
+        break
+
+    except Exception as e:
+      logging.error(f"Error in Detroit crime data retrieval for day={import_day}: {e}")
+    finally:
+      result_offset += DETROIT_CRIME_INGESTION_LIMIT
+
+# Daily ingestion of regular season scores for the year
 def import_current_baseball():
   try:
     logging.info(f"Retrieving MLB current season scores.")
@@ -152,6 +185,7 @@ def import_current_baseball():
   except Exception as e:
     logging.error(f"Error in MLB current season data transfer: {e}")
 
+# Data updated infrequently, only needs ingestion annually
 def import_historical_baseball():
   import_year = HISTORICAL_BASEBALL_START_YEAR
   while import_year < datetime.now().year:
@@ -175,4 +209,13 @@ def import_historical_baseball():
     finally:
       import_year += 1
 
-import_weather_metar()
+def ingest_from_data_sources():
+  import_weather_metar()
+  import_weather_ncei()
+  import_philadelphia_crime()
+  import_detroit_crime()
+  import_current_baseball()
+  if datetime.now().month == HISTORICAL_BASEBALL_INGESTION_MONTH:
+    import_historical_baseball()
+
+ingest_from_data_sources()
