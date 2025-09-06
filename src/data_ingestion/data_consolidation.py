@@ -132,14 +132,15 @@ class MetarObservation:
 def metar_to_parquet(
     city: str,
     ingested_metar: list[dict],
-    ingest_year = (datetime.now() - timedelta(days=1)).year,
+    ingest_day = datetime.now() - timedelta(days=1),
     existing_metar = b''
   ) -> bytes:
-  try:
-    consolidation_logging = logging.getLogger('consolidation_log')
-  except:
+  ingest_year = ingest_day.year
+
+  consolidation_logging = logging.getLogger('consolidation_log')
+  if not consolidation_logging.hasHandlers():
     consolidation_logging = initialize_logger(log_destination='data_consolidation.log', logger_name='consolidation_log')
-  consolidation_logging.info(f"Consolidating {city} METAR data to yearly parquet")
+  consolidation_logging.info(f"Consolidating {city} {ingest_day.strftime("%Y-%m-%d")} METAR data into yearly parquet")
 
   daily_metar = [MetarObservation(**observation).to_dict() for observation in ingested_metar]
   daily_metar_concat = pl.DataFrame(daily_metar)
@@ -181,8 +182,8 @@ def metar_to_parquet(
   reporting_start = daily_metar_concat["reportTime"].min()
 
   try:
-    consolidation_logging.info(f"Retrieving {city} yearly METAR parquet")
     if not existing_metar:
+      consolidation_logging.info(f"Retrieving {city} yearly METAR parquet")
       with minio_client.get_object(MINIO_BUCKET_NAME, object_name=f"weather/{city}/metar/{ingest_year}/{city}_yearly_metar_{ingest_year}.parquet") as response:
         existing_metar = response.read()
     existing_metar_concat = pl.read_parquet(io.BytesIO(existing_metar))
@@ -223,7 +224,7 @@ def recompile_metar_parquet_for_year(year: int, city: str):
       if check_file in record_list:
         with minio_client.get_object(MINIO_BUCKET_NAME, object_name=check_file) as response:
           daily_metar = response.json()
-        compiled_metar = metar_to_parquet(city, daily_metar, ingest_year=year, existing_metar=compiled_metar)
+        compiled_metar = metar_to_parquet(city, daily_metar, ingest_day=check_day, existing_metar=compiled_metar)
       check_day += timedelta(days=1)
     
     if compiled_metar:
@@ -240,4 +241,4 @@ def recompile_metar_parquet_for_year(year: int, city: str):
     consolidation_logger.info(f"Error occurred in recompilation of {city} {year} parquet: {e}")
     raise
 
-recompile_metar_parquet_for_year(2025, "detroit")
+# recompile_metar_parquet_for_year(2025, "philadelphia")

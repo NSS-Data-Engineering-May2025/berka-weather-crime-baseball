@@ -20,7 +20,10 @@ load_dotenv()
 DETROIT_CRIME_START_YEAR = 2017
 DETROIT_CRIME_INGESTION_DELAY = int(os.getenv("DETROIT_CRIME_INGESTION_DELAY"))
 DETROIT_CRIME_INGESTION_LIMIT = 2000
+
 PHILADELPHIA_CRIME_START_YEAR = 2006
+PHILADELPHIA_CRIME_FULL_IMPORT_DAY = 1
+
 HISTORICAL_BASEBALL_START_YEAR = 2000
 HISTORICAL_BASEBALL_INGESTION_MONTH = 1
 
@@ -114,6 +117,8 @@ def import_weather_ncei():
 # Daily ingestion, 1 file per year
 def import_philadelphia_crime():
   import_year = PHILADELPHIA_CRIME_START_YEAR
+  if datetime.now().day != PHILADELPHIA_CRIME_FULL_IMPORT_DAY:
+    import_year = datetime.now().year
   while import_year <= datetime.now().year:
     logging.info(f"Retrieving Philadelphia crime data for year {import_year}")
     try:
@@ -124,8 +129,10 @@ def import_philadelphia_crime():
       annual_crime_data = response.json()
       if annual_crime_data["total_rows"] > 0:
         logging.info(f"API retrieval successful for {import_year}. Rows returned: {annual_crime_data["total_rows"]}")
-      
-        minio_file_path = f"crime/philadelphia/{datetime.now().strftime("%Y-%m-%d")}/philadelphia_crime_report_{import_year}.json"
+
+        minio_file_path = f"crime/philadelphia/{datetime.now().year}/{datetime.now().strftime("%Y-%m-%d")}/philadelphia_crime_report_{import_year}.json"
+        if datetime.now().year != import_year:
+          minio_file_path = f"crime/philadelphia/{datetime.now().year}/past/philadelphia_crime_report_{import_year}.json"
 
         logging.info("Saving data as JSON in MinIO")
         send_to_minio(response.content, minio_file_path)
@@ -139,7 +146,7 @@ def import_philadelphia_crime():
 
 # Daily ingestion of deltas from DETROIT_INGESTION_CRIME_DELAY days prior, also uses manual seed data for historical
 def import_detroit_crime():
-  import_day = (datetime.today() - timedelta(days=3)).strftime("%Y-%m-%d")
+  import_day = (datetime.today() - timedelta(days=DETROIT_CRIME_INGESTION_DELAY)).strftime("%Y-%m-%d")
   result_offset = 0
   while True:
     logging.info(f"Retrieving Detroit crime data updates for {import_day}")
