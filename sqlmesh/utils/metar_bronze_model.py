@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import polars as pl
 from minio import Minio
 
-schema = {
+metar_schema = {
   'icaoId': 'str',
   'receiptTime': 'str',
   'obsTime': 'int',
