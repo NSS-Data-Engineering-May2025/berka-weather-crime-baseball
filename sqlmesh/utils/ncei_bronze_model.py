@@ -6,13 +6,13 @@ from datetime import datetime, timedelta
 from minio import Minio
 
 ncei_schema = {
-  'Date': 'datetime',
-  'TAVG (Degrees Fahrenheit)': 'str',
-  'TMAX (Degrees Fahrenheit)': 'str',
-  'TMIN (Degrees Fahrenheit)': 'str',
-  'PRCP (Inches)': 'str',
-  'SNOW (Inches)': 'str',
-  'SNWD (Inches)': 'str'
+  'date': 'datetime',
+  'tavg (degrees fahrenheit)': 'str',
+  'tmax (degrees fahrenheit)': 'str',
+  'tmin (degrees fahrenheit)': 'str',
+  'prcp (inches)': 'str',
+  'snow (inches)': 'str',
+  'snwd (inches)': 'str'
 }
 
 def get_ncei_bronze_table(city: str, start_ts: datetime, end_ts: datetime):

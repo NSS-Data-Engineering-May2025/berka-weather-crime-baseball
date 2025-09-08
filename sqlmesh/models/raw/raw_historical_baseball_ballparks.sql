@@ -1,7 +1,20 @@
 MODEL(
   name raw.historical_baseball_ballparks,
-  kind FULL,
-  cron '0 0 1 1 *',
+  kind INCREMENTAL_BY_UNIQUE_KEY (
+    unique_key "PARKID",
+  ),
+  columns (
+    parkid VARCHAR,
+    "name" VARCHAR,
+    aka VARCHAR,
+    city VARCHAR,
+    "state" VARCHAR,
+    "start" DATE,
+    "end" DATE,
+    league VARCHAR,
+    notes VARCHAR
+  ),
+  allow_partials true,
   gateway duckdb
 );
 

@@ -17,7 +17,6 @@ from utils.minio_utils import get_latest_minio_records_by_timestamp
     name=ModelKindName.INCREMENTAL_BY_TIME_RANGE,
     time_column="game_date"
   ),
-  start="2000-01-01",
   gateway="duckdb",
   columns={
     'game_date': 'datetime',
