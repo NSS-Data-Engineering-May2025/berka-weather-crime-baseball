@@ -1,6 +1,7 @@
 MODEL(
   name raw.historical_baseball_ballparks,
   kind FULL,
+  cron '0 0 1 1 *',
   gateway duckdb
 );
 

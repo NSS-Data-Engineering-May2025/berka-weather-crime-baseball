@@ -3,6 +3,7 @@ import sys
 import json
 from dotenv import load_dotenv
 from sqlmesh import model
+from sqlmesh.core.model.kind import ModelKindName
 from datetime import datetime, timedelta
 import polars as pl
 from minio import Minio
@@ -13,7 +14,10 @@ sys.path.append(parent_path)
 
 @model(
   name="raw.philadelphia_crime_report",
-  kind="FULL",
+  kind=dict(
+    name=ModelKindName.INCREMENTAL_BY_UNIQUE_KEY,
+    unique_key="cartodb_id"
+  ),
   gateway="duckdb",
   columns={
     'cartodb_id': 'int',
@@ -23,7 +27,7 @@ sys.path.append(parent_path)
     'dc_dist': 'str',
     'psa': 'str',
     'dispatch_date_time': 'str',
-    'dispatch_date': 'str',
+    'dispatch_date': 'datetime',
     'dispatch_time': 'str',
     'hour': 'int',
     'dc_key': 'numeric',
@@ -77,4 +81,7 @@ def execute(context, **kwargs):
     pl.col("dispatch_date").str.strptime(pl.Date, "%Y-%m-%d")
   )
 
-  return all_years.to_pandas()
+  if len(all_years) == 0:
+    yield from ()
+  else:
+    yield all_years

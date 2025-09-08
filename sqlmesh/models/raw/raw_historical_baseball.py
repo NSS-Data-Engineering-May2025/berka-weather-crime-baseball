@@ -2,6 +2,7 @@ import os
 import sys
 from dotenv import load_dotenv
 from sqlmesh import model
+from sqlmesh.core.model.kind import ModelKindName
 import polars as pl
 from minio import Minio
 
@@ -12,7 +13,11 @@ from utils.minio_utils import get_latest_minio_records_by_timestamp
 
 @model(
   name="raw.historical_baseball",
-  kind="FULL",
+  kind=dict(
+    name=ModelKindName.INCREMENTAL_BY_TIME_RANGE,
+    time_column="game_date"
+  ),
+  start="2000-01-01",
   gateway="duckdb",
   columns={
     'game_date': 'datetime',
@@ -178,7 +183,7 @@ from utils.minio_utils import get_latest_minio_records_by_timestamp
     'data_acquisition_code': 'str',
   }
 )
-def execute(context, **kwargs):
+def execute(context, start, end, **kwargs):
   load_dotenv()
 
   MINIO_URL = os.getenv("MINIO_URL")
@@ -208,5 +213,13 @@ def execute(context, **kwargs):
   all_years = all_years.with_columns(
     pl.col("game_date").str.strptime(pl.Date, "%Y%m%d")
   )
+
+  filtered_for_incremental = all_years.filter(
+    (pl.col("game_date") >= start.replace(tzinfo=None)) & 
+    (pl.col("game_date") < end.replace(tzinfo=None))
+  )
   
-  return all_years.to_pandas()
+  if len(filtered_for_incremental) == 0:
+    yield from ()
+  else:
+    yield filtered_for_incremental.to_pandas()
