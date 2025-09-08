@@ -15,7 +15,7 @@ ncei_schema = {
   'SNWD (Inches)': 'str'
 }
 
-def get_ncei_bronze_table(city: str):
+def get_ncei_bronze_table(city: str, start_ts: datetime, end_ts: datetime):
   load_dotenv()
 
   NCEI_EXPIRY_SPAN = 30
@@ -51,7 +51,7 @@ def get_ncei_bronze_table(city: str):
     raise Exception("NCEI data is either missing or needs to be updated. Re-ingest and try again")
   
   ncei_report = ncei_report.with_columns([
-    pl.col('Date').cast(pl.Utf8),
+    pl.col('Date').str.strptime(pl.Date, "%Y-%m-%d"),
     pl.col('TAVG (Degrees Fahrenheit)').cast(pl.Utf8),
     pl.col('TMAX (Degrees Fahrenheit)').cast(pl.Utf8),
     pl.col('TMIN (Degrees Fahrenheit)').cast(pl.Utf8),
@@ -60,4 +60,9 @@ def get_ncei_bronze_table(city: str):
     pl.col('SNWD (Inches)').cast(pl.Utf8)
   ])
 
-  return ncei_report.to_pandas()
+  filtered_ncei = ncei_report.filter(
+    (pl.col("Date") >= start_ts.replace(tzinfo=None)) & 
+    (pl.col("Date") < end_ts.replace(tzinfo=None))
+  )
+
+  return filtered_ncei.to_pandas()
