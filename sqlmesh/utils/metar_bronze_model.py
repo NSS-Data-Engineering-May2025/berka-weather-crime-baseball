@@ -38,7 +38,7 @@ metar_schema = {
   'fltCat': 'str',
 }
 
-def get_metar_bronze_table(city: str):
+def get_metar_bronze_table(city: str, start_ts, end_ts):
   load_dotenv()
 
   MINIO_URL = os.getenv("MINIO_URL")
@@ -68,4 +68,9 @@ def get_metar_bronze_table(city: str):
   
   all_yearly_metar = pl.concat(collected_yearly_metar)
 
-  return all_yearly_metar.to_pandas()
+  filtered_metar = all_yearly_metar.filter(
+    (pl.col("reportTime") >= start_ts.replace(tzinfo=None)) & 
+    (pl.col("reportTime") < end_ts.replace(tzinfo=None))
+  )
+  
+  return filtered_metar.to_pandas()

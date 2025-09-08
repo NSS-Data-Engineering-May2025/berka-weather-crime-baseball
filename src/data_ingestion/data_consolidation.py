@@ -241,4 +241,4 @@ def recompile_metar_parquet_for_year(year: int, city: str):
     consolidation_logger.info(f"Error occurred in recompilation of {city} {year} parquet: {e}")
     raise
 
-# recompile_metar_parquet_for_year(2025, "philadelphia")
+recompile_metar_parquet_for_year(2025, "detroit")

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from minio import Minio
 
 ncei_schema = {
-  'Date': 'str',
+  'Date': 'datetime',
   'TAVG (Degrees Fahrenheit)': 'str',
   'TMAX (Degrees Fahrenheit)': 'str',
   'TMIN (Degrees Fahrenheit)': 'str',
