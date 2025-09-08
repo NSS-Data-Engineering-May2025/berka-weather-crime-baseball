@@ -1,6 +1,8 @@
 MODEL(
   name stg.historical_baseball,
-  kind FULL,
+  kind INCREMENTAL_BY_TIME_RANGE (
+    time_column game_date
+  ),
   gateway duckdb
 );
 
@@ -18,5 +20,4 @@ SELECT
   day_night,
   park_id,
   time_of_game_minutes::INT
-FROM raw.historical_baseball
-LIMIT 10;
+FROM raw.historical_baseball;

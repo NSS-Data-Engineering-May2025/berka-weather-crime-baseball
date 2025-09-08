@@ -13,7 +13,7 @@ parent_path = os.path.abspath(os.path.join(current_path, "..", ".."))
 sys.path.append(parent_path)
 
 @model(
-  name="raw.philadelphia_crime_report",
+  name="raw.philadelphia_crime",
   kind=dict(
     name=ModelKindName.INCREMENTAL_BY_UNIQUE_KEY,
     unique_key="cartodb_id"

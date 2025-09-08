@@ -6,22 +6,23 @@ gateways:
       # https://sqlmesh.readthedocs.io/en/stable/reference/configuration/#connection
       # https://sqlmesh.readthedocs.io/en/stable/integrations/engines/duckdb/#connection-options
       type: duckdb
-      catalogs:
-        wcb:
-          type: postgres
-          path: 'dbname=wcb user=postgresuser host=localhost password=postgres-password port=5432'
-      extensions:
-        - name: httpfs
-  postgres:
-    connection:
-      type: postgres
-      database: wcb
-      user: postgresuser
-      password: postgres-password
-      host: localhost
-      port: 5432
+      database: db.db
+  #     catalogs:
+  #       wcb:
+  #         type: postgres
+  #         path: 'dbname=wcb user=postgresuser host=localhost password=postgres-password port=5432'
+  #     extensions:
+  #       - name: httpfs
+  # postgres:
+  #   connection:
+  #     type: postgres
+  #     database: wcb
+  #     user: postgresuser
+  #     password: postgres-password
+  #     host: localhost
+  #     port: 5432
 
-default_gateway: postgres
+default_gateway: duckdb
 
 # --- Model Defaults ---
 # https://sqlmesh.readthedocs.io/en/stable/reference/model_configuration/#model-defaults
