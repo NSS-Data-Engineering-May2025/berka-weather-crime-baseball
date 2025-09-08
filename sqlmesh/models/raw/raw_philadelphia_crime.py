@@ -3,6 +3,7 @@ import sys
 import json
 from dotenv import load_dotenv
 from sqlmesh import model
+from sqlmesh.core.model.kind import ModelKindName
 from datetime import datetime, timedelta
 import polars as pl
 from minio import Minio
@@ -13,7 +14,11 @@ sys.path.append(parent_path)
 
 @model(
   name="raw.philadelphia_crime_report",
-  kind="FULL",
+  kind=dict(
+    name=ModelKindName.INCREMENTAL_BY_UNIQUE_KEY,
+    time_column="dispatch_date"
+  ),
+  start='2000-01-01',
   gateway="duckdb",
   columns={
     'cartodb_id': 'int',
@@ -23,7 +28,7 @@ sys.path.append(parent_path)
     'dc_dist': 'str',
     'psa': 'str',
     'dispatch_date_time': 'str',
-    'dispatch_date': 'str',
+    'dispatch_date': 'datetime',
     'dispatch_time': 'str',
     'hour': 'int',
     'dc_key': 'numeric',
@@ -34,7 +39,7 @@ sys.path.append(parent_path)
     'point_y': 'float'
   }
 )
-def execute(context, **kwargs):
+def execute(context, start, end, **kwargs):
   load_dotenv()
 
   MINIO_URL = os.getenv("MINIO_URL")
@@ -77,4 +82,12 @@ def execute(context, **kwargs):
     pl.col("dispatch_date").str.strptime(pl.Date, "%Y-%m-%d")
   )
 
-  return all_years.to_pandas()
+  filtered_for_incremental = all_years.filter(
+    (pl.col("dispatch_date") >= start.replace(tzinfo=None)) & 
+    (pl.col("dispatch_date") < end.replace(tzinfo=None))
+  )
+
+  if len(filtered_for_incremental) == 0:
+    yield from ()
+  else:
+    yield filtered_for_incremental
