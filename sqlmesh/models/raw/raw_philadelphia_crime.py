@@ -16,9 +16,8 @@ sys.path.append(parent_path)
   name="raw.philadelphia_crime_report",
   kind=dict(
     name=ModelKindName.INCREMENTAL_BY_UNIQUE_KEY,
-    time_column="dispatch_date"
+    unique_key="cartodb_id"
   ),
-  start='2000-01-01',
   gateway="duckdb",
   columns={
     'cartodb_id': 'int',
@@ -39,7 +38,7 @@ sys.path.append(parent_path)
     'point_y': 'float'
   }
 )
-def execute(context, start, end, **kwargs):
+def execute(context, **kwargs):
   load_dotenv()
 
   MINIO_URL = os.getenv("MINIO_URL")
@@ -82,12 +81,7 @@ def execute(context, start, end, **kwargs):
     pl.col("dispatch_date").str.strptime(pl.Date, "%Y-%m-%d")
   )
 
-  filtered_for_incremental = all_years.filter(
-    (pl.col("dispatch_date") >= start.replace(tzinfo=None)) & 
-    (pl.col("dispatch_date") < end.replace(tzinfo=None))
-  )
-
-  if len(filtered_for_incremental) == 0:
+  if len(all_years) == 0:
     yield from ()
   else:
-    yield filtered_for_incremental
+    yield all_years
