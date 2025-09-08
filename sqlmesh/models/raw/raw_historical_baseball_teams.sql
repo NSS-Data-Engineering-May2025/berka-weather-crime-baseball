@@ -1,7 +1,17 @@
 MODEL(
   name raw.historical_baseball_teams,
-  kind FULL,
-  cron '0 0 1 1 *',
+  kind INCREMENTAL_BY_UNIQUE_KEY (
+    unique_key "TEAM",
+  ),
+  columns (
+    team VARCHAR,
+    league VARCHAR,
+    city VARCHAR,
+    nickname VARCHAR,
+    "first" INT,
+    "last" INT
+  ),
+  allow_partials true,
   gateway duckdb
 );
 
