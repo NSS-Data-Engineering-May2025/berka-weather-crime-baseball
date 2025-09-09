@@ -4,6 +4,7 @@ import json
 from dotenv import load_dotenv
 from sqlmesh import model
 from sqlmesh.core.model.kind import ModelKindName
+from sqlglot.expressions import to_column
 from datetime import datetime, timedelta
 import polars as pl
 from minio import Minio
@@ -16,7 +17,7 @@ sys.path.append(parent_path)
   name="raw.philadelphia_crime",
   kind=dict(
     name=ModelKindName.INCREMENTAL_BY_UNIQUE_KEY,
-    unique_key="cartodb_id"
+    unique_key="objectid"
   ),
   gateway="duckdb",
   columns={
@@ -36,7 +37,10 @@ sys.path.append(parent_path)
     'text_general_code': 'str',
     'point_x': 'float',
     'point_y': 'float'
-  }
+  },
+  audits=[
+    ("assert_unique_values", {"unique_key": to_column("objectid")})
+  ]
 )
 def execute(context, **kwargs):
   load_dotenv()

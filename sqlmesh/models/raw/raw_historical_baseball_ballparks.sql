@@ -3,6 +3,9 @@ MODEL(
   kind INCREMENTAL_BY_UNIQUE_KEY (
     unique_key "PARKID",
   ),
+  audits (
+    assert_unique_values(unique_key := parkid)
+  ),
   columns (
     parkid VARCHAR,
     "name" VARCHAR,
