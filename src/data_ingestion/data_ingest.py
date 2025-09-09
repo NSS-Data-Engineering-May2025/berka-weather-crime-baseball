@@ -225,4 +225,5 @@ def ingest_from_data_sources():
   if datetime.now().month == HISTORICAL_BASEBALL_INGESTION_MONTH:
     import_historical_baseball()
 
-ingest_from_data_sources()
+if __name__ == "__main__":
+  ingest_from_data_sources()

@@ -3,28 +3,13 @@ import io
 import sys
 import logging
 import polars as pl
-from dotenv import load_dotenv
-from minio import Minio
 from datetime import datetime, timedelta
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.abspath(os.path.join(current_path, "..", ".."))
 sys.path.append(parent_path)
 from src.logger import initialize_logger
-
-load_dotenv()
-
-MINIO_URL = os.getenv("MINIO_URL")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
-MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME")
-
-minio_client = Minio(
-    MINIO_URL,
-    access_key=MINIO_ACCESS_KEY,
-    secret_key=MINIO_SECRET_KEY,
-    secure=False
-  )
+from src.utils.minio_project_client import minio_client_setup
 
 class MetarObservation:
   def __init__(
@@ -184,6 +169,9 @@ def metar_to_parquet(
   try:
     if not existing_metar:
       consolidation_logging.info(f"Retrieving {city} yearly METAR parquet")
+
+      (minio_client, MINIO_BUCKET_NAME) = minio_client_setup()
+      
       with minio_client.get_object(MINIO_BUCKET_NAME, object_name=f"weather/{city}/metar/{ingest_year}/{city}_yearly_metar_{ingest_year}.parquet") as response:
         existing_metar = response.read()
     existing_metar_concat = pl.read_parquet(io.BytesIO(existing_metar))
@@ -206,6 +194,9 @@ def recompile_metar_parquet_for_year(year: int, city: str):
   consolidation_logger = initialize_logger(log_destination='data_consolidation.log', logger_name='consolidation_log')
   consolidation_logger.info(f"Recompiling METAR parquet for {city} {year}")
   compiled_parquet_file_name = f"weather/{city}/metar/{year}/{city}_yearly_metar_{year}.parquet"
+
+  (minio_client, MINIO_BUCKET_NAME) = minio_client_setup()
+
   try:
     minio_client.remove_object(
       MINIO_BUCKET_NAME,
@@ -240,6 +231,3 @@ def recompile_metar_parquet_for_year(year: int, city: str):
   except Exception as e:
     consolidation_logger.info(f"Error occurred in recompilation of {city} {year} parquet: {e}")
     raise
-
-if __name__ == "__main__":
-  recompile_metar_parquet_for_year(2025, "detroit")
