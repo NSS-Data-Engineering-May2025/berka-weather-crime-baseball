@@ -136,4 +136,4 @@ def test_metar_to_parquet_basic():
         assert col in compiled_metar_as_parquet.columns
 
     assert compiled_metar_as_parquet.height == 2
-    # Height should only be two because the logic in metar_to_parquet removes data from ingested reporting day to avoid repeated entries. So only the existing metar entry from 2025-09-04 will persist.
+    # DataFrame height should only be 2 because the logic in metar_to_parquet removes data from ingested reporting day to avoid repeated entries. Only the existing metar entry from 2025-09-04 will persist, as the reporting day is 2025-09-05.
