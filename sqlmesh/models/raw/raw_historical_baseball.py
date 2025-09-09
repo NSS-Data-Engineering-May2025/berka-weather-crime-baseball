@@ -3,6 +3,7 @@ import sys
 from dotenv import load_dotenv
 from sqlmesh import model
 from sqlmesh.core.model.kind import ModelKindName
+from sqlglot.expressions import to_column
 import polars as pl
 from minio import Minio
 
@@ -180,7 +181,14 @@ from utils.minio_utils import get_latest_minio_records_by_timestamp
     'home_starting_lineup_9_position': 'str',
     'addl_info': 'str',
     'data_acquisition_code': 'str',
-  }
+  },
+  audits=[
+    ("assert_parses_as_numeric_non_negative",
+      {"columns":
+       [to_column("home_team_score"), to_column("visiting_team_score")]
+      }
+    )
+  ]
 )
 def execute(context, start, end, **kwargs):
   load_dotenv()

@@ -3,6 +3,9 @@ MODEL(
   kind INCREMENTAL_BY_UNIQUE_KEY (
     unique_key "TEAM",
   ),
+  audits (
+    assert_unique_values(unique_key := team)
+  ),
   columns (
     team VARCHAR,
     league VARCHAR,
