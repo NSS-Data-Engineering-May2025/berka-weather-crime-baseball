@@ -1,7 +1,7 @@
 [project]
 name = "weather-crime-baseball"
 version = "0.1.0"
-description = "Add your description here"
+description = "Data pipeline aggregating 21st century weather, crime, and baseball statistics"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -9,6 +9,7 @@ dependencies = [
     "minio>=7.2.16",
     "polars>=1.33.0",
     "pyarrow>=21.0.0",
+    "pytest>=8.4.2",
     "requests>=2.32.5",
     "sqlmesh[postgres]>=0.214.0",
 ]

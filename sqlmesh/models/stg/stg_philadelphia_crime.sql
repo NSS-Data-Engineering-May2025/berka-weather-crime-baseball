@@ -5,7 +5,7 @@ MODEL (
 );
 
 SELECT
-  cartodb_id as id,
+  objectid as id,
   dispatch_date,
   EXTRACT(year from dispatch_date) as dispatch_year,
   EXTRACT(month from dispatch_date) as dispatch_month,

@@ -20,6 +20,7 @@ In order to run properly, a .env file must be created with the following fields 
  - MINIO_ACCESS_KEY
  - MINIO_SECRET_KEY
  - MINIO_BUCKET_NAME
+ - DETROIT_CRIME_INGESTION_DELAY
 ## Developer
 Alex Berka
 ## Last Updated
