@@ -27,7 +27,7 @@ jobs:
       run: |
         black sqlmesh/ src/ tests/
 
-  tests:
+  tests-python:
     name: Python Tests
     runs-on: ubuntu-latest
     needs: quality
@@ -52,7 +52,7 @@ jobs:
           export PYTHONPATH=$(pwd)
           pytest --cov=. --cov-report=xml
 
-  tests:
+  tests-sqlmesh:
     name: SQLMesh Tests
     runs-on: ubuntu-latest
     needs: quality
