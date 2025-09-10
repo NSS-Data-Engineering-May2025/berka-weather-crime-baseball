@@ -4,7 +4,7 @@ test_gold_philadelphia_weather:
     stg.philadelphia_ncei:
       rows:
       - report_date: '2025-01-01'
-        avg_temp_deg_f: '57'
+        avg_temp_deg_f: null
         max_temp_deg_f: '65'
         min_temp_deg_f: '43'
         total_precip_inches: '0.1'
@@ -41,6 +41,55 @@ test_gold_philadelphia_weather:
         temp_deg_f: 55.4
         precip_last_6hrs_inches: null
         precip_last_24hrs_inches: null
+      - report_time_utc: '2025-07-14 05:00:00'
+        report_time_edt: '2025-07-14 01:00:00'
+        report_time_est: '2025-07-14 00:00:00'
+        temp_deg_c: 16.2
+        temp_deg_f: 61.16
+        precip_last_6hrs_inches: null
+        precip_last_24hrs_inches: null
+      - report_time_utc: '2025-07-14 06:00:00'
+        report_time_edt: '2025-07-14 02:00:00'
+        report_time_est: '2025-07-14 01:00:00'
+        temp_deg_c: 16.0
+        temp_deg_f: 60.80
+        precip_last_6hrs_inches: null
+        precip_last_24hrs_inches: null
+      - report_time_utc: '2025-07-14 07:00:00'
+        report_time_edt: '2025-07-14 03:00:00'
+        report_time_est: '2025-07-14 02:00:00'
+        temp_deg_c: 15.7
+        temp_deg_f: 60.2
+        precip_last_6hrs_inches: null
+        precip_last_24hrs_inches: null
+      - report_time_utc: '2025-07-14 08:00:00'
+        report_time_edt: '2025-07-14 04:00:00'
+        report_time_est: '2025-07-14 03:00:00'
+        temp_deg_c: 16.5
+        temp_deg_f: 61.7
+        precip_last_6hrs_inches: null
+        precip_last_24hrs_inches: null
+      - report_time_utc: '2025-07-14 09:00:00'
+        report_time_edt: '2025-07-14 05:00:00'
+        report_time_est: '2025-07-14 04:00:00'
+        temp_deg_c: 17.2
+        temp_deg_f: 62.96
+        precip_last_6hrs_inches: null
+        precip_last_24hrs_inches: null
+      - report_time_utc: '2025-07-14 10:00:00'
+        report_time_edt: '2025-07-14 06:00:00'
+        report_time_est: '2025-07-14 05:00:00'
+        temp_deg_c: 18.1
+        temp_deg_f: 64.58
+        precip_last_6hrs_inches: null
+        precip_last_24hrs_inches: null
+      - report_time_utc: '2025-07-14 11:00:00'
+        report_time_edt: '2025-07-14 07:00:00'
+        report_time_est: '2025-07-14 06:00:00'
+        temp_deg_c: 19.0
+        temp_deg_f: 66.2
+        precip_last_6hrs_inches: null
+        precip_last_24hrs_inches: null
       - report_time_utc: '2025-07-14 12:00:00'
         report_time_edt: '2025-07-14 08:00:00'
         report_time_est: '2025-07-14 07:00:00'
@@ -48,6 +97,41 @@ test_gold_philadelphia_weather:
         temp_deg_f: 69.98
         precip_last_6hrs_inches: 0.04
         precip_last_24hrs_inches: 0.24
+      - report_time_utc: '2025-07-14 13:00:00'
+        report_time_edt: '2025-07-14 09:00:00'
+        report_time_est: '2025-07-14 08:00:00'
+        temp_deg_c: 21.7
+        temp_deg_f: 71.06
+        precip_last_6hrs_inches: null
+        precip_last_24hrs_inches: null
+      - report_time_utc: '2025-07-14 14:00:00'
+        report_time_edt: '2025-07-14 10:00:00'
+        report_time_est: '2025-07-14 09:00:00'
+        temp_deg_c: 22.0
+        temp_deg_f: 71.60
+        precip_last_6hrs_inches: null
+        precip_last_24hrs_inches: null
+      - report_time_utc: '2025-07-14 15:00:00'
+        report_time_edt: '2025-07-14 11:00:00'
+        report_time_est: '2025-07-14 10:00:00'
+        temp_deg_c: 22.2
+        temp_deg_f: 71.96
+        precip_last_6hrs_inches: null
+        precip_last_24hrs_inches: null
+      - report_time_utc: '2025-07-14 16:00:00'
+        report_time_edt: '2025-07-14 12:00:00'
+        report_time_est: '2025-07-14 11:00:00'
+        temp_deg_c: 22.5
+        temp_deg_f: 72.50
+        precip_last_6hrs_inches: null
+        precip_last_24hrs_inches: null
+      - report_time_utc: '2025-07-14 17:00:00'
+        report_time_edt: '2025-07-14 13:00:00'
+        report_time_est: '2025-07-14 12:00:00'
+        temp_deg_c: 22.5
+        temp_deg_f: 72.50
+        precip_last_6hrs_inches: null
+        precip_last_24hrs_inches: null
       - report_time_utc: '2025-07-14 18:00:00'
         report_time_edt: '2025-07-14 14:00:00'
         report_time_est: '2025-07-14 13:00:00'
@@ -55,31 +139,65 @@ test_gold_philadelphia_weather:
         temp_deg_f: 71.96
         precip_last_6hrs_inches: 0.01
         precip_last_24hrs_inches: null
+      - report_time_utc: '2025-07-14 19:00:00'
+        report_time_edt: '2025-07-14 15:00:00'
+        report_time_est: '2025-07-14 14:00:00'
+        temp_deg_c: 22.5
+        temp_deg_f: 72.50
+        precip_last_6hrs_inches: null
+        precip_last_24hrs_inches: null
+      - report_time_utc: '2025-07-14 20:00:00'
+        report_time_edt: '2025-07-14 16:00:00'
+        report_time_est: '2025-07-14 15:00:00'
+        temp_deg_c: 22.2
+        temp_deg_f: 71.96
+        precip_last_6hrs_inches: null
+        precip_last_24hrs_inches: null
   outputs:
     query:
       rows:
       - report_date: '2024-12-31'
-        avg_temp_deg_f: 55.940
-        max_temp_deg_f: 55.940
-        min_temp_deg_f: 55.940
+        avg_temp_deg_f: 55.94
+        avg_temp_deg_f_source: "METAR - INCOMPLETE"
+        max_temp_deg_f: 55.94
+        max_temp_deg_f_source: "METAR - INCOMPLETE"
+        min_temp_deg_f: 55.94
+        min_temp_deg_f_source: "METAR - INCOMPLETE"
         total_precip_inches: 0.000
+        total_precip_inches_source: "METAR - INCOMPLETE"
       - report_date: '2025-01-01'
-        avg_temp_deg_f: 55.580
-        max_temp_deg_f: 55.760
-        min_temp_deg_f: 55.400
-        total_precip_inches: 0.005
+        avg_temp_deg_f: 55.58
+        avg_temp_deg_f_source: "METAR - INCOMPLETE"
+        max_temp_deg_f: 65.00
+        max_temp_deg_f_source: "NCEI"
+        min_temp_deg_f: 43.00
+        min_temp_deg_f_source: "NCEI"
+        total_precip_inches: 0.100
+        total_precip_inches_source: "NCEI"
       - report_date: '2025-01-02'
-        avg_temp_deg_f: 48.000
-        max_temp_deg_f: 50.000
-        min_temp_deg_f: 32.000
+        avg_temp_deg_f: 48.00
+        avg_temp_deg_f_source: "NCEI"
+        max_temp_deg_f: 50.00
+        max_temp_deg_f_source: "NCEI"
+        min_temp_deg_f: 32.00
+        min_temp_deg_f_source: "NCEI"
         total_precip_inches: 0.000
+        total_precip_inches_source: "NCEI"
       - report_date: '2025-01-03'
         avg_temp_deg_f: null
-        max_temp_deg_f: 48.000
-        min_temp_deg_f: 28.000
+        avg_temp_deg_f_source: "NA"
+        max_temp_deg_f: 48.00
+        max_temp_deg_f_source: "NCEI"
+        min_temp_deg_f: 28.00
+        min_temp_deg_f_source: "NCEI"
         total_precip_inches: 0.700
+        total_precip_inches_source: "NCEI"
       - report_date: '2025-07-14'
-        avg_temp_deg_f: 70.970
-        max_temp_deg_f: 71.960
-        min_temp_deg_f: 69.980
+        avg_temp_deg_f: 67.73
+        avg_temp_deg_f_source: "METAR"
+        max_temp_deg_f: 72.50
+        max_temp_deg_f_source: "METAR"
+        min_temp_deg_f: 60.20
+        min_temp_deg_f_source: "METAR"
         total_precip_inches: 0.050
+        total_precip_inches_source: "METAR"
