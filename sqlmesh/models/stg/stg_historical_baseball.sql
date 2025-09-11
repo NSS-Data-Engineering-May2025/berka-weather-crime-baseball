@@ -3,14 +3,16 @@ MODEL(
   kind INCREMENTAL_BY_TIME_RANGE (
     time_column game_date
   ),
+  audits (
+    assert_unique_values(unique_key := historical_game_id)
+  ),
   gateway duckdb
 );
 
 SELECT
   game_date,
-  EXTRACT(YEAR FROM game_date) AS game_year,
-  EXTRACT(MONTH FROM game_date) AS game_month,
-  EXTRACT(DAY FROM game_date) AS game_day,
+  EXTRACT(YEAR FROM game_date) AS season,
+  CONCAT(season, home_team, home_team_game_number, visiting_team, visiting_team_game_number) as historical_game_id,
   visiting_team AS away_team,
   visiting_team_game_number::INT AS away_team_game_number,
   home_team,

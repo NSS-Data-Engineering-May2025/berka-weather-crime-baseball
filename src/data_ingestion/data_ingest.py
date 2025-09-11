@@ -226,4 +226,4 @@ def ingest_from_data_sources():
     import_historical_baseball()
 
 if __name__ == "__main__":
-  import_current_baseball()
+  ingest_from_data_sources()
