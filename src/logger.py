@@ -21,6 +21,11 @@ def format_json(record):
 
 
 def initialize_logger(log_destination='application.log', logger_name='application_log', console=False, backup_count=1, log_size_mb=2):
+    
+    logger = logging.getLogger(logger_name)
+    if logger.hasHandlers():
+        return logger
+    
     """Setup logging with simplified JSON format and file rotation"""
     formatter = logging.Formatter()
     formatter.format = format_json

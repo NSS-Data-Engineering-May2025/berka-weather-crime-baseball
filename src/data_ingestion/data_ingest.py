@@ -7,11 +7,11 @@ import requests
 from dotenv import load_dotenv
 from minio import Minio
 from datetime import datetime, timedelta
-from data_consolidation import metar_to_parquet
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.abspath(os.path.join(current_path, "..", ".."))
 sys.path.append(parent_path)
+from src.data_ingestion.data_consolidation import metar_to_parquet
 from src.logger import initialize_logger
 
 
@@ -70,7 +70,7 @@ def send_to_minio(data: bytes, filename):
     raise
 
 # Daily ingestion w/ compilation to yearly parquet file
-def import_weather_metar():
+def ingest_weather_metar():
   for station in METAR_WEATHER_STATIONS:
     today = datetime.today()
     ingest_day = today - timedelta(days=1)
@@ -97,7 +97,7 @@ def import_weather_metar():
       logging.error(f"Error in METAR weather data retrieval for station={station["ids"]}, city={station["city"]}: {e}")
 
 # Daily ingestion, single file with all history
-def import_weather_ncei():
+def ingest_weather_ncei():
   for dataset in NCEI_WEATHER_DATASETS:
     try:
       url = f"https://www.ncei.noaa.gov/access/past-weather/{dataset["station"]}/data.csv"
@@ -115,7 +115,7 @@ def import_weather_ncei():
       logging.error(f"Error in NCEI weather data retrieval for station={dataset["station"]}, city={dataset["city"]}: {e}")
 
 # Daily ingestion, 1 file per year
-def import_philadelphia_crime():
+def ingest_philadelphia_crime():
   import_year = PHILADELPHIA_CRIME_START_YEAR
   if datetime.now().day != PHILADELPHIA_CRIME_FULL_IMPORT_DAY:
     import_year = datetime.now().year
@@ -145,7 +145,7 @@ def import_philadelphia_crime():
       import_year += 1
 
 # Daily ingestion of deltas from DETROIT_INGESTION_CRIME_DELAY days prior, also uses manual seed data for historical
-def import_detroit_crime():
+def ingest_detroit_crime():
   import_day = (datetime.today() - timedelta(days=DETROIT_CRIME_INGESTION_DELAY)).strftime("%Y-%m-%d")
   result_offset = 0
   while True:
@@ -172,7 +172,7 @@ def import_detroit_crime():
       result_offset += DETROIT_CRIME_INGESTION_LIMIT
 
 # Daily ingestion of regular season scores for the year
-def import_current_baseball():
+def ingest_current_baseball():
   try:
     logging.info(f"Retrieving MLB current season scores.")
 
@@ -193,7 +193,7 @@ def import_current_baseball():
     logging.error(f"Error in MLB current season data transfer: {e}")
 
 # Data updated infrequently, only needs ingestion annually
-def import_historical_baseball():
+def ingest_historical_baseball():
   import_year = HISTORICAL_BASEBALL_START_YEAR
   while import_year < datetime.now().year:
     logging.info(f"Retrieving historical baseball data for year={import_year}")
@@ -216,14 +216,14 @@ def import_historical_baseball():
     finally:
       import_year += 1
 
-def ingest_from_data_sources():
-  import_weather_metar()
-  import_weather_ncei()
-  import_philadelphia_crime()
-  import_detroit_crime()
-  import_current_baseball()
+def consume_data_sources():
+  ingest_weather_metar()
+  ingest_weather_ncei()
+  ingest_philadelphia_crime()
+  ingest_detroit_crime()
+  ingest_current_baseball()
   if datetime.now().month == HISTORICAL_BASEBALL_INGESTION_MONTH:
-    import_historical_baseball()
+    ingest_historical_baseball()
 
 if __name__ == "__main__":
-  ingest_from_data_sources()
+  consume_data_sources()
