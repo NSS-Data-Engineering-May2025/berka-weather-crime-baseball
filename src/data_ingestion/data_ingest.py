@@ -184,7 +184,7 @@ def import_current_baseball():
 
     logging.info(f"API retrieval successful. Games returned: {score_data["totalGames"]}")
   
-    minio_file_path = f"baseball/current/{datetime.now().strftime("%Y-%m-%d")}/mlb_regular_season_scores_{datetime.now().year}_.json"
+    minio_file_path = f"baseball/current/{datetime.now().strftime("%Y-%m-%d")}/mlb_regular_season_scores_{datetime.now().year}.json"
 
     logging.info("Saving data as JSON in MinIO")
     send_to_minio(response.content, minio_file_path)

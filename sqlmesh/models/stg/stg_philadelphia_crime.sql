@@ -1,11 +1,13 @@
 MODEL (
   name stg.philadelphia_crime,
-  kind FULL,
+  kind INCREMENTAL_BY_UNIQUE_KEY(
+    unique_key id
+  ),
   gateway duckdb
 );
 
 SELECT
-  objectid as id,
+  dc_key as id,
   dispatch_date,
   EXTRACT(year from dispatch_date) as dispatch_year,
   EXTRACT(month from dispatch_date) as dispatch_month,
