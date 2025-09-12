@@ -22,6 +22,7 @@ SELECT
   CASE WHEN home_team_score::INT > away_team_score::INT
     THEN True
     ELSE False END AS home_team_is_winner,
+  
   CASE WHEN home_team_score::INT = away_team_score::INT
     THEN True
     ELSE False END AS is_tie,
