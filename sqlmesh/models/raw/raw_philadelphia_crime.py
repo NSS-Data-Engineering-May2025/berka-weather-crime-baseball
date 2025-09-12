@@ -17,7 +17,7 @@ sys.path.append(parent_path)
   name="raw.philadelphia_crime",
   kind=dict(
     name=ModelKindName.INCREMENTAL_BY_UNIQUE_KEY,
-    unique_key="objectid"
+    unique_key="dc_key"
   ),
   gateway="duckdb",
   columns={
