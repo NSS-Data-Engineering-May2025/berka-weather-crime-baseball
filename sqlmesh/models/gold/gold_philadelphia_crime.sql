@@ -48,22 +48,23 @@ phil_crime_agg AS (
 )
 SELECT
     dispatch_date,
+    population,
     total_incidents,
-    ROUND(total_incidents/pop_100k, 3) AS total_incidents_per_100000,
+    ROUND(total_incidents/pop_100k, 3) AS total_incidents_per_100k,
     violent_crime,
-    ROUND(violent_crime/pop_100k, 3) AS violent_crime_per_100000,
+    ROUND(violent_crime/pop_100k, 3) AS violent_crime_per_100k,
     homicide,
-    ROUND(homicide/pop_100k, 3) AS homicide_per_100000,
+    ROUND(homicide/pop_100k, 3) AS homicide_per_100k,
     assault,
-    ROUND(assault/pop_100k, 3) AS assault_per_100000,
+    ROUND(assault/pop_100k, 3) AS assault_per_100k,
     rape,
-    ROUND(rape/pop_100k, 3) AS rape_per_100000,
+    ROUND(rape/pop_100k, 3) AS rape_per_100k,
     robbery,
-    ROUND(robbery/pop_100k, 3) AS robbery_per_100000,
+    ROUND(robbery/pop_100k, 3) AS robbery_per_100k,
     theft,
-    ROUND(theft/pop_100k, 3) AS theft_per_100000,
+    ROUND(theft/pop_100k, 3) AS theft_per_100k,
     burglary,
-    ROUND(burglary/pop_100k, 3) AS burglary_per_100000,
+    ROUND(burglary/pop_100k, 3) AS burglary_per_100k,
     arson,
-    ROUND(arson/pop_100k, 3) AS arson_per_100000
+    ROUND(arson/pop_100k, 3) AS arson_per_100k
 FROM phil_crime_agg;
