@@ -121,10 +121,16 @@ WITH
             score,
             home_team,
             outcome,
-            COUNT(game_number)
-                OVER(PARTITION BY season, team, streak_group
-                ORDER BY game_number
-                ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS current_streak,
+            CASE WHEN outcome = 'win'
+                THEN COUNT(game_number)
+                        OVER(PARTITION BY season, team, streak_group
+                        ORDER BY game_number
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+                ELSE -1 * COUNT(game_number)
+                        OVER(PARTITION BY season, team, streak_group
+                        ORDER BY game_number
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+                END AS current_streak,
             game_number,
             COALESCE(current_record_wins,
                      COUNT(team)
