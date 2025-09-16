@@ -54,9 +54,24 @@ WITH philly_ball AS (
 )
 SELECT
     COALESCE(crime.dispatch_date, weather.report_date, baseball.game_date) AS entry_date,
-    *
+    *,
+    ROUND(AVG(weather.max_temp_deg_f) OVER (
+      PARTITION BY EXTRACT(month from weather.report_date), EXTRACT(day from weather.report_date)), 2)
+      AS avg_max_temp_deg_f,
+    ROUND(AVG(weather.min_temp_deg_f) OVER (
+      PARTITION BY EXTRACT(month from weather.report_date), EXTRACT(day from weather.report_date)), 2)
+      AS avg_min_temp_deg_f,
+    CASE
+        WHEN team_game_number IS NULL
+            THEN MAX(team_current_record_wins) OVER (ORDER BY entry_date ROWS BETWEEN 9 PRECEDING AND CURRENT ROW)
+        ELSE team_current_record_wins END AS team_current_record_wins_lag,
+    CASE
+        WHEN team_game_number IS NULL
+            THEN MAX(team_current_record_losses) OVER (ORDER BY entry_date ROWS BETWEEN 9 PRECEDING AND CURRENT ROW)
+        ELSE team_current_record_losses END AS team_current_record_losses_lag
 FROM gold.philadelphia_crime crime
 FULL OUTER JOIN gold.philadelphia_weather weather
 ON crime.dispatch_date = weather.report_date
 FULL OUTER JOIN philly_ball baseball
-ON crime.dispatch_date = baseball.game_date OR weather.report_date = baseball.game_date;
+ON crime.dispatch_date = baseball.game_date OR weather.report_date = baseball.game_date
+ORDER BY entry_date;
