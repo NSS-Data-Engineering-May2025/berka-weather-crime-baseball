@@ -12,6 +12,7 @@ dependencies = [
     "pyarrow>=21.0.0",
     "pytest>=8.4.2",
     "requests>=2.32.5",
+    "seaborn>=0.13.2",
     "sqlmesh[postgres]>=0.214.0",
     "streamlit>=1.49.1",
 ]

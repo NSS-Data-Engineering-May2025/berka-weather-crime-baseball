@@ -2,6 +2,8 @@ import os
 import numpy as np
 import polars as pl
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 import streamlit as st
 import duckdb
 from datetime import datetime, timedelta
@@ -28,17 +30,28 @@ with duckdb.connect('sqlmesh/db.db') as conn:
       index=None,
       placeholder="Select city..."
     )
+    
   if analysis_city is None:
     st.write('[Select a city from the sidebar]')
   if analysis_city is not None:
     st.header(analysis_city)
     sql_script = get_sql_script(analysis_city)
     city_table = conn.execute(sql_script).fetchdf()
+    city_table = city_table.rename(columns={
+      'max_temp_deg_f': 'Daily Max Temp (F)',
+      'min_temp_deg_f': 'Daily Min Temp (F)',
+      'total_precip_inches': 'Precipitation (in)',
+      'total_incidents_per_100k': 'Incidents per 100k',
+      'violent_crime_per_100k': 'Violent Crime per 100k',
+      'assault_per_100k': 'Assaults per 100k'
+    })
 
     team_name = city_table['team'].mode()[0]
     analysis_start = city_table['entry_date'].min().strftime('%Y-%m-%d')
     analysis_end = city_table['entry_date'].max().strftime('%Y-%m-%d')
 
+    analysis_start_year = None
+    analysis_end_year = None
     with st.sidebar:
       analysis_year = st.selectbox(
         "Year",
@@ -46,46 +59,85 @@ with duckdb.connect('sqlmesh/db.db') as conn:
         index=None,
         placeholder="Select year..."
       )
-
+    if analysis_year is None:
+      start_year = city_table['entry_date'].min().year
+      end_year = city_table['entry_date'].max().year
+      year_options = list(range(start_year, end_year + 1))
+      with st.sidebar:
+        st.write('OR')
+        analysis_start_year, analysis_end_year = st.select_slider(
+        "Timeframe",
+        options=year_options,
+        value=(start_year, end_year)
+        )
+    
     if analysis_year is not None:
-      city_table = city_table[city_table['report_date'].dt.year == analysis_year]
-
       start_date = datetime(analysis_year, 1, 1)
       end_date = datetime(analysis_year + 1, 1, 1)
       options = [(start_date + timedelta(days=i)).strftime('%Y-%m-%d') for i in range((end_date - start_date).days)]
 
       with st.sidebar:
         analysis_start, analysis_end = st.select_slider(
-        "Date Range",
+        "Timeframe",
         options=options,
         value=(f'{analysis_year}-01-01',f'{analysis_year}-12-31')
         )
+    else:
+      if analysis_start_year != int(analysis_start.split('-')[0]):
+        analysis_start = datetime(analysis_start_year, 1, 1).strftime('%Y-%m-%d')
+      if analysis_end_year != int(analysis_end.split('-')[0]):
+        analysis_end = datetime(analysis_end_year, 12, 31).strftime('%Y-%m-%d')
       
-      city_table = city_table[
-        (city_table['entry_date'] >= datetime.strptime(analysis_start, '%Y-%m-%d')) &
-        (city_table['entry_date'] <= datetime.strptime(analysis_end, '%Y-%m-%d'))]
+    city_table = city_table[
+      (city_table['entry_date'] >= datetime.strptime(analysis_start, '%Y-%m-%d')) &
+      (city_table['entry_date'] <= datetime.strptime(analysis_end, '%Y-%m-%d'))]
       
     # The join with baseball creates duplicate entries for days with double headers
     city_table_deduped = city_table.drop_duplicates(subset='entry_date', keep='last')
     city_table_deduped_bb_season = city_table[city_table['team_current_record_wins_lag'].notnull()]
+
+    city_table_deduped['Daily Max Temp Deviation From Avg Daily Max (F)'] = city_table_deduped['Daily Max Temp (F)'] - city_table_deduped['avg_max_temp_deg_f']
+    city_table_deduped['Daily Min Temp Deviation From Avg Daily Min (F)'] = city_table_deduped['Daily Min Temp (F)'] - city_table_deduped['avg_min_temp_deg_f']
 
     #WEATHER X CRIME
     st.header(body='Weather x Crime')
     if city_table['total_incidents'].sum() == 0:
       st.write('No Crime Data Available For Timeframe')
     else:
-      avg_incidents = city_table_deduped['total_incidents_per_100k'].mean()
+      incident_wc_options={
+        'Incidents per 100k': 'Total Incidents',
+        'Violent Crime per 100k': 'Violent Crime',
+        'Assaults per 100k': 'Assault'
+      }
+
+      crime_metric = st.pills(
+        "Metric",
+        label_visibility='collapsed',
+        options=incident_wc_options.keys(),
+        format_func=lambda choice: incident_wc_options[choice],
+        selection_mode='single',
+        default='Incidents per 100k'
+      )
+
+      if crime_metric is None:
+        crime_metric = 'Incidents per 100k'
+
+      avg_incidents = city_table_deduped[crime_metric].mean()
 
       avg_incidents_hot = city_table_deduped[
-        city_table_deduped['max_temp_deg_f'] > city_table_deduped['avg_max_temp_deg_f']
-      ]['total_incidents_per_100k'].mean()
+        city_table_deduped['Daily Max Temp (F)'] > city_table_deduped['avg_max_temp_deg_f']
+      ][crime_metric].mean()
 
       avg_incidents_cold = city_table_deduped[
-        city_table_deduped['min_temp_deg_f'] < city_table_deduped['avg_min_temp_deg_f']
-      ]['total_incidents_per_100k'].mean()
+        city_table_deduped['Daily Min Temp (F)'] < city_table_deduped['avg_min_temp_deg_f']
+      ][crime_metric].mean()
+
+      avg_incidents_rainy = city_table_deduped[
+        city_table_deduped['Precipitation (in)'] >= 1
+      ][crime_metric].mean()
         
       st.metric(
-        label=f'Average Daily Incidents per 100k residents ({analysis_start} - {analysis_end})',
+        label=f'Avg Daily {crime_metric} residents ({analysis_start} - {analysis_end})',
         value=round(avg_incidents, 2)
       )
 
@@ -99,65 +151,94 @@ with duckdb.connect('sqlmesh/db.db') as conn:
         )
       with crime_cold:
         st.metric(
-          label=f'with Daily Min Temp < Avg Daily Min Temp',
+          label='with Daily Min Temp < Avg Daily Min Temp',
           value=round(avg_incidents_cold,2),
           delta=round(avg_incidents_cold - avg_incidents, 2),
           delta_color='inverse'
         )
 
-      avg_violent = city_table_deduped['violent_crime_per_100k'].mean()
-
-      avg_violent_hot = city_table_deduped[
-        city_table_deduped['max_temp_deg_f'] > city_table_deduped['avg_max_temp_deg_f']
-      ]['violent_crime_per_100k'].mean()
-
-      avg_violent_cold = city_table_deduped[
-        city_table_deduped['min_temp_deg_f'] < city_table_deduped['avg_min_temp_deg_f']
-      ]['violent_crime_per_100k'].mean()
-        
-      st.metric(
-        label=f'Average Daily Violent Crime per 100k residents ({analysis_start} - {analysis_end})',
-        value=round(avg_violent, 2)
-      )
-
-      violent_hot, violent_cold = st.columns(2)
-      with violent_hot:
+      crime_dry, crime_rainy = st.columns(2)
+      with crime_rainy:
         st.metric(
-          label=f'with Daily Max Temp > Avg Daily Max Temp',
-          value=round(avg_violent_hot,2),
-          delta=round(avg_violent_hot - avg_violent, 2),
+          label='with Daily Precipitation > 1in',
+          value=round(avg_incidents_rainy,2),
+          delta=round(avg_incidents_rainy - avg_incidents, 2),
           delta_color='inverse'
         )
-      with violent_cold:
-        st.metric(
-          label=f'with Daily Min Temp < Avg Daily Min Temp',
-          value=round(avg_violent_cold,2),
-          delta=round(avg_violent_cold - avg_violent, 2),
-          delta_color='inverse'
-        )
-
+      
       if analysis_year is not None:
-        st.line_chart(city_table_deduped, x="entry_date", y=["total_incidents_per_100k", "violent_crime_per_100k"], x_label='Date', y_label='Daily Incidents')
+        st.line_chart(city_table_deduped, x="entry_date", y=crime_metric, x_label='', y_label=f'Daily {crime_metric}')
+      
+      st.subheader('Regression Model')
+
+      x_wc_options = {
+        'Daily Max Temp (F)': 'Max Temp',
+        'Daily Min Temp (F)': 'Min Temp',
+        'Daily Max Temp Deviation From Avg Daily Max (F)': 'Max Temp Deviation',
+        'Daily Min Temp Deviation From Avg Daily Min (F)': 'Min Temp Deviation'
+      }
+
+      x_wc_select, y_wc_select = st.columns(2)
+      with x_wc_select:
+        x_wc = st.pills(
+          "X-Axis",
+          options=x_wc_options.keys(),
+          format_func=lambda choice: x_wc_options[choice],
+          selection_mode='single'
+        )
+      with y_wc_select:
+        y_wc = st.pills(
+          "Y-Axis",
+          options=incident_wc_options.keys(),
+          format_func=lambda choice: incident_wc_options[choice],
+          selection_mode='single'
+        )
+      
+      if x_wc is not None and y_wc is not None:
+        fig, ax = plt.subplots(figsize=(9,4))      
+        sns.regplot(
+          x=x_wc,
+          y=y_wc,
+          data=city_table_deduped,
+          ax=ax,
+          color='black',
+          marker='.',
+          line_kws=dict(color='r')
+        )
+        st.pyplot(fig)
+        correlation = round(city_table_deduped[x_wc].corr(city_table_deduped[y_wc]), 3)
+        pcc_message = f"_Pearson's Correlation Coefficient_: {correlation}"
+        if abs(correlation) < 0.3:
+          st.error(pcc_message)
+        elif abs(correlation) < 0.7:
+          st.warning(pcc_message)
+        else:
+          st.success(pcc_message)
+      else:
+        st.caption('_Select x- and y- axes to display model_')
+
+    st.divider()
+
     #CRIME X BASEBALL
     st.header(body=f'Crime x {team_name}')
     if city_table['total_incidents'].sum() == 0:
       st.write('No Crime Data Available For Timeframe')
     else:
-      avg_incidents = city_table_deduped_bb_season['total_incidents_per_100k'].mean()
+      avg_incidents = city_table_deduped_bb_season['Incidents per 100k'].mean()
 
       avg_incidents_500up = city_table_deduped_bb_season[
         city_table_deduped_bb_season['team_current_record_wins_lag'] > city_table_deduped_bb_season['team_current_record_losses_lag']
-      ]['total_incidents_per_100k'].mean()
+      ]['Incidents per 100k'].mean()
       avg_incidents_500down = city_table_deduped_bb_season[
         city_table_deduped_bb_season['team_current_record_wins_lag'] < city_table_deduped_bb_season['team_current_record_losses_lag']
-      ]['total_incidents_per_100k'].mean()
+      ]['Incidents per 100k'].mean()
 
       avg_incidents_w4plus = city_table_deduped_bb_season[
           city_table_deduped_bb_season['team_current_streak'] >= 4
-        ]['total_incidents_per_100k'].mean()
+        ]['Incidents per 100k'].mean()
       avg_incidents_l4plus = city_table_deduped_bb_season[
           city_table_deduped_bb_season['team_current_streak'] <= -4
-        ]['total_incidents_per_100k'].mean()
+        ]['Incidents per 100k'].mean()
       
       if avg_incidents > 0:
         st.metric(label=f'Avg Daily Incidents per 100k residents during baseball season ({analysis_start} - {analysis_end})', value=round(avg_incidents,2))
@@ -192,30 +273,32 @@ with duckdb.connect('sqlmesh/db.db') as conn:
             delta=round(avg_incidents_l4plus-avg_incidents, 2),
             delta_color='inverse')
     
+    st.divider()
+
     # WEATHER X BASEBALL
     st.header(f'Weather x {team_name}')
 
     city_table_home_games = city_table[city_table['home_game']]
 
-    wins_table = city_table_home_games[city_table['team_outcome'] == 'win']
-    losses_table = city_table_home_games[city_table['team_outcome'] == 'loss']
+    wins_table = city_table_home_games[city_table_home_games['team_outcome'] == 'win']
+    losses_table = city_table_home_games[city_table_home_games['team_outcome'] == 'loss']
     wins_all = len(wins_table)
     losses_all = len(losses_table)
     win_pct_all = round(wins_all/(wins_all + losses_all), 3)
 
     wins_hot = len(wins_table[
-      wins_table['max_temp_deg_f'] > wins_table['avg_max_temp_deg_f']
+      wins_table['Daily Max Temp (F)'] > wins_table['avg_max_temp_deg_f']
     ])
     losses_hot = len(losses_table[
-      losses_table['max_temp_deg_f'] > losses_table['avg_max_temp_deg_f']
+      losses_table['Daily Max Temp (F)'] > losses_table['avg_max_temp_deg_f']
     ])
     win_pct_hot = round(wins_hot/(wins_hot + losses_hot), 3)
 
     wins_cold = len(wins_table[
-      wins_table['min_temp_deg_f'] < wins_table['avg_min_temp_deg_f']
+      wins_table['Daily Min Temp (F)'] < wins_table['avg_min_temp_deg_f']
     ])
     losses_cold = len(losses_table[
-      losses_table['min_temp_deg_f'] < losses_table['avg_min_temp_deg_f']
+      losses_table['Daily Min Temp (F)'] < losses_table['avg_min_temp_deg_f']
     ])
     win_pct_cold = round(wins_cold/(wins_cold + losses_cold), 3)
     
@@ -243,8 +326,6 @@ with duckdb.connect('sqlmesh/db.db') as conn:
         city_table_deduped.rename(columns={
           "avg_max_temp_deg_f": "Avg Daily Max Temp",
           "avg_min_temp_deg_f": "Avg Daily Min Temp",
-          "max_temp_deg_f": "Daily Max Temp",
-          "min_temp_deg_f": "Daily Min Temp",
-        }), x="entry_date", y=[ "Avg Daily Max Temp", "Avg Daily Min Temp", "Daily Max Temp", "Daily Min Temp"], color=["#f78674","#64c5fa","#f72a0a","#0f67f5"], y_label="Temp (F)", x_label='')
+        }), x="entry_date", y=["Avg Daily Max Temp", "Avg Daily Min Temp", "Daily Max Temp (F)", "Daily Min Temp (F)"], color=["#f78674","#64c5fa","#f72a0a","#0f67f5"], y_label="Temp (F)", x_label='')
       st.write(f'{team_name} Home Games {analysis_year}')
       st.bar_chart(city_table_deduped[city_table_deduped['home_game']], x='entry_date', y='team', y_label='', x_label='')
