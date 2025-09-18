@@ -83,8 +83,8 @@ WITH
                     WHEN is_tie THEN 'tie'
                     WHEN away_team_score = home_team_score AND NOT is_tie THEN null
                     WHEN home_team_is_winner
-                    THEN 'loss'
-                    ELSE 'win' END AS outcome,
+                    THEN 'win'
+                    ELSE 'loss' END AS outcome,
                 night_game
             FROM stg.current_baseball) as teams
     ),
